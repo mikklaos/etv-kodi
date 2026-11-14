@@ -172,19 +172,33 @@ def version_of(addon_id):
     return text[start:text.find('"', start)]
 
 
+def zip_entry(name, data):
+    info = zipfile.ZipInfo(name)
+    info.date_time = (2024, 1, 1, 0, 0, 0)
+    info.create_system = 3
+    info.flag_bits |= 0x800
+    if name.endswith("/"):
+        info.compress_type = zipfile.ZIP_STORED
+        info.external_attr = (0o40755 << 16) | 0x10
+    else:
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.external_attr = 0o100644 << 16
+    return info, data
+
+
 def zip_addon(addon_id):
     version = version_of(addon_id)
     dest_dir = os.path.join(ROOT, "zips", addon_id)
     os.makedirs(dest_dir, exist_ok=True)
     dest = os.path.join(dest_dir, "%s-%s.zip" % (addon_id, version))
     source = os.path.join(ROOT, addon_id)
-    with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as archive:
+    with zipfile.ZipFile(dest, "w") as archive:
         seen = set()
         for folder, dirnames, filenames in os.walk(source):
             dirnames[:] = [name for name in dirnames if name != "__pycache__"]
             for name in filenames:
-                if name.endswith(".pyc"):
-                    continue
+                if name.endswith(".pyc") or "+" in name:
+                    raise RuntimeError("unsafe addon filename: %s" % name)
                 full = os.path.join(folder, name)
                 rel = os.path.relpath(full, ROOT).replace("\\", "/")
                 parts = rel.split("/")
@@ -192,8 +206,12 @@ def zip_addon(addon_id):
                     directory = "/".join(parts[:index]) + "/"
                     if directory not in seen:
                         seen.add(directory)
-                        archive.writestr(directory, "")
-                archive.write(full, rel)
+                        info, data = zip_entry(directory, b"")
+                        archive.writestr(info, data)
+                with open(full, "rb") as handle:
+                    payload = handle.read()
+                info, data = zip_entry(rel, payload)
+                archive.writestr(info, data)
     return dest
 
 

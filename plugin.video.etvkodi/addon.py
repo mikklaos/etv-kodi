@@ -29,7 +29,7 @@ CHANNELS = (
 ART = {
     "etv": ("etv.jpg", "etv-logo.png"),
     "etv2": ("etv2.jpg", "etv2-logo.png"),
-    "etvpluss": ("etv+.jpg", "etv+-logo.png"),
+    "etvpluss": ("etvplus.jpg", "etvplus-logo.png"),
 }
 WEEKDAYS = (
     "esmaspäev",
