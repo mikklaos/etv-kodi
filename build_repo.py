@@ -63,6 +63,7 @@ def zip_addon(addon_id):
     dest = os.path.join(dest_dir, "%s-%s.zip" % (addon_id, version))
     source = os.path.join(ROOT, addon_id)
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as archive:
+        seen = set()
         for folder, dirnames, filenames in os.walk(source):
             dirnames[:] = [name for name in dirnames if name != "__pycache__"]
             for name in filenames:
@@ -70,14 +71,27 @@ def zip_addon(addon_id):
                     continue
                 full = os.path.join(folder, name)
                 rel = os.path.relpath(full, ROOT).replace("\\", "/")
+                parts = rel.split("/")
+                for index in range(1, len(parts)):
+                    directory = "/".join(parts[:index]) + "/"
+                    if directory not in seen:
+                        seen.add(directory)
+                        archive.writestr(directory, "")
                 archive.write(full, rel)
     return dest
 
 
 def main():
+    import shutil
+    friendly = {
+        "repository.etvkodi": "Paigalda-ETV-hoidla.zip",
+        "plugin.video.etvkodi": "Paigalda-ETV-otse.zip",
+    }
     for addon_id in ADDONS:
         write_icon(os.path.join(ROOT, addon_id, "icon.png"))
-        print(zip_addon(addon_id))
+        dest = zip_addon(addon_id)
+        print(dest)
+        shutil.copyfile(dest, os.path.join(ROOT, friendly[addon_id]))
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n<addons>\n' + "\n".join(addon_xml(addon_id) for addon_id in ADDONS) + "\n</addons>\n"
     xml_path = os.path.join(ROOT, "addons.xml")
