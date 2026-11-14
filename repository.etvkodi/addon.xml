@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="repository.etvkodi" name="ETV Kodi" version="1.0.0" provider-name="mikklaos">
+  <extension point="xbmc.addon.repository" name="ETV Kodi">
+    <dir minversion="19.0.0">
+      <info compressed="false">https://raw.githubusercontent.com/mikklaos/etv-kodi/master/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/mikklaos/etv-kodi/master/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/mikklaos/etv-kodi/master/zips/</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="et">ETV otseülekande hoidla</summary>
+    <summary lang="en">ETV live repository</summary>
+    <description lang="et">Hoidla, kust paigaldada ETV, ETV2 ja ETV+ otseplugin.</description>
+    <description lang="en">Repository for the ETV, ETV2 and ETV+ live addon.</description>
+    <platform>all</platform>
+    <license>GPL-2.0-only</license>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+  </extension>
+</addon>

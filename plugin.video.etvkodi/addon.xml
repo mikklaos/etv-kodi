@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.etvkodi" name="ETV otse" version="1.0.0" provider-name="mikklaos">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="inputstream.adaptive" optional="true"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="addon.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" start="login"/>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="et">ETV, ETV2 ja ETV+ otse</summary>
+    <summary lang="en">ETV, ETV2 and ETV+ live</summary>
+    <description lang="et">ERR-i otsekanalid lehelt otse.err.ee. Osa saateid on ainult Eestis või DRM-iga ja siis ei mängi.</description>
+    <description lang="en">ERR live channels from otse.err.ee. Some programmes are limited to Estonia or use DRM and will not play.</description>
+    <platform>all</platform>
+    <license>GPL-2.0-only</license>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+  </extension>
+</addon>

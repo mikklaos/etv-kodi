@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings>
+  <category label="30000">
+    <setting id="quality" type="labelenum" label="30001" values="1080p|720p|396p|180p" default="1080p"/>
+  </category>
+</settings>

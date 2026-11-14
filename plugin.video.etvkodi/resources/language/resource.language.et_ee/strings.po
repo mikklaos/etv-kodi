@@ -1,0 +1,12 @@
+msgid ""
+msgstr ""
+"Language: et_EE\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgctxt "#30000"
+msgid "Settings"
+msgstr "Seaded"
+
+msgctxt "#30001"
+msgid "Quality"
+msgstr "Kvaliteet"
