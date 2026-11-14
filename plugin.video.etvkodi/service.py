@@ -41,7 +41,11 @@ class EtvPlayer(xbmc.Player):
             playing = self.getPlayingFile() or ""
         except Exception:
             return
-        if "127.0.0.1:%d" % proxy.PORT not in playing:
+        if (
+            "127.0.0.1:%d" % proxy.PORT not in playing
+            and "vod.err.ee" not in playing
+            and "live.err.ee" not in playing
+        ):
             return
         if self._saved is not None:
             return

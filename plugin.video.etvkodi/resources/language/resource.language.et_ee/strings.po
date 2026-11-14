@@ -10,3 +10,7 @@ msgstr "Seaded"
 msgctxt "#30001"
 msgid "Quality"
 msgstr "Kvaliteet"
+
+msgctxt "#30004"
+msgid "How many days to show"
+msgstr "Mitme päeva saateid näidatakse"

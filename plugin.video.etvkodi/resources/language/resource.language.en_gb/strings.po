@@ -10,3 +10,7 @@ msgstr "Settings"
 msgctxt "#30001"
 msgid "Quality"
 msgstr "Quality"
+
+msgctxt "#30004"
+msgid "How many days to show"
+msgstr "How many days to show"

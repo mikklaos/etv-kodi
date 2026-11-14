@@ -2,5 +2,6 @@
 <settings>
   <category label="30000">
     <setting id="quality" type="labelenum" label="30001" values="1080p|720p|396p|180p" default="1080p"/>
+    <setting id="days" type="number" label="30004" default="31"/>
   </category>
 </settings>
