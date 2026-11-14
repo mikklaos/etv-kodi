@@ -49,7 +49,9 @@ def addon_path():
 def channel_art(channel):
     fanart_name, logo_name = ART[channel]
     root = os.path.join(addon_path(), "resources")
-    return os.path.join(root, fanart_name), os.path.join(root, logo_name)
+    fanart = os.path.join(root, fanart_name).replace("\\", "/")
+    logo = os.path.join(root, logo_name).replace("\\", "/")
+    return fanart, logo
 
 
 def apply_art(item, channel, image=None):
@@ -146,8 +148,9 @@ def list_channels():
         items.append((url, item, False))
 
     xbmcplugin.addDirectoryItems(HANDLE, items)
-    xbmcplugin.setContent(HANDLE, "videos")
+    # Empty content selects the list layout that draws the icon in front of the label.
     xbmcplugin.endOfDirectory(HANDLE)
+    xbmc.executebuiltin("Container.SetViewMode(55)")
 
 
 def list_dates(channel):

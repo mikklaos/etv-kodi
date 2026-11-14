@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
-<addon id="plugin.video.etvkodi" name="ETV otse" version="1.0.3" provider-name="mikklaos">
+<addon id="plugin.video.etvkodi" name="ETV otse" version="1.0.4" provider-name="mikklaos">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="inputstream.adaptive" optional="true"/>
