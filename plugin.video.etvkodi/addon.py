@@ -91,6 +91,13 @@ def play(channel):
     if channel not in titles:
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
+    if proxy.playback_block(channel) == "drm":
+        xbmcgui.Dialog().ok(
+            "ETV otse",
+            "See saade on DRM-kaitsega ja avalik voog ei käivitu. Kui saade vahetub, proovi uuesti.",
+        )
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        return
     if ensure_proxy():
         url = "http://%s:%d/%s.m3u8" % (proxy.HOST, proxy.PORT, channel)
     else:

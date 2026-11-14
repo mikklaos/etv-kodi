@@ -3,14 +3,22 @@
 import re
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import urllib.error
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HOST = "127.0.0.1"
 PORT = 18675
 ORIGIN = "https://live.err.ee/live/"
 KEEP = 8
 USER_AGENT = "Kodi/21.0 (ETV otse)"
+SUBTITLE_NAMES = {
+    "et": "Eesti",
+    "ru": "Vene",
+    "nl": "Hollandi",
+    "en": "Inglise",
+    "fi": "Soome",
+}
 
 _quality = "1080p"
 _cache = {}
@@ -61,7 +69,9 @@ def parse_attrs(line):
 def parse_master(text):
     audios = []
     videos = []
+    subtitles = []
     seen_langs = set()
+    seen_subs = set()
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     index = 0
     while index < len(lines):
@@ -69,14 +79,23 @@ def parse_master(text):
         if line.startswith("#EXT-X-MEDIA:"):
             attrs = parse_attrs(line)
             lang = attrs.get("LANGUAGE") or ""
-            if attrs.get("TYPE") == "AUDIO" and attrs.get("URI") and lang and lang != "zxx":
+            uri = (attrs.get("URI") or "").split("?", 1)[0]
+            if attrs.get("TYPE") == "AUDIO" and uri and lang and lang != "zxx":
                 if lang not in seen_langs:
                     seen_langs.add(lang)
                     audios.append({
                         "lang": lang,
                         "name": (attrs.get("NAME") or lang).replace('"', ""),
-                        "uri": attrs["URI"].split("?", 1)[0],
+                        "uri": uri,
                         "default": attrs.get("DEFAULT") == "YES",
+                    })
+            elif attrs.get("TYPE") == "SUBTITLES" and uri and lang and lang != "und":
+                if lang not in seen_subs:
+                    seen_subs.add(lang)
+                    subtitles.append({
+                        "lang": lang,
+                        "name": SUBTITLE_NAMES.get(lang, (attrs.get("NAME") or lang).replace('"', "")),
+                        "uri": uri,
                     })
         elif line.startswith("#EXT-X-STREAM-INF:") and index + 1 < len(lines):
             uri = lines[index + 1]
@@ -98,7 +117,7 @@ def parse_master(text):
         index += 1
     if audios and not any(audio["default"] for audio in audios):
         audios[0]["default"] = True
-    return audios, videos
+    return audios, videos, subtitles
 
 
 def choose_video(videos, height):
@@ -111,6 +130,33 @@ def choose_video(videos, height):
 
 def load_master(channel):
     return parse_master(fetch(ORIGIN + channel + ".m3u8"))
+
+
+def playback_block(channel):
+    try:
+        text = media_playlist(channel, "video")
+    except Exception:
+        return None
+    segments = [line for line in text.splitlines() if line.startswith("https://")]
+    if len(segments) < 2:
+        return None
+    request = urllib.request.Request(
+        segments[-2],
+        headers={"User-Agent": USER_AGENT, "Range": "bytes=0-32"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=8) as response:
+            if (response.headers.get("drm") or "").lower() == "true":
+                return "drm"
+            return None
+    except urllib.error.HTTPError as exc:
+        if (exc.headers.get("drm") or "").lower() == "true":
+            return "drm"
+        if exc.code == 403:
+            return "drm"
+        return None
+    except Exception:
+        return None
 
 
 def absolute(uri):
@@ -178,7 +224,7 @@ def trim(text):
 
 
 def master_playlist(channel):
-    audios, videos = load_master(channel)
+    audios, videos, subtitles = load_master(channel)
     video = choose_video(videos, target_height())
     root = "http://%s:%d/%s" % (HOST, PORT, channel)
     lines = [
@@ -193,29 +239,42 @@ def master_playlist(channel):
             'DEFAULT=%s,AUTOSELECT=YES,CHANNELS="2",URI="%s/audio/%s.m3u8"'
             % (audio["lang"], audio["name"], default, root, audio["lang"])
         )
+    for subtitle in subtitles:
+        lines.append(
+            '#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",LANGUAGE="%s",NAME="%s",'
+            'DEFAULT=NO,AUTOSELECT=YES,URI="%s/sub/%s.m3u8"'
+            % (subtitle["lang"], subtitle["name"], root, subtitle["lang"])
+        )
+    extra = ',SUBTITLES="subs"' if subtitles else ""
     lines.append(
-        '#EXT-X-STREAM-INF:BANDWIDTH=%s,CODECS="%s",RESOLUTION=%s,AUDIO="audio"'
-        % (video["bandwidth"], video["codecs"], video["resolution"])
+        '#EXT-X-STREAM-INF:BANDWIDTH=%s,CODECS="%s",RESOLUTION=%s,AUDIO="audio"%s'
+        % (video["bandwidth"], video["codecs"], video["resolution"], extra)
     )
     lines.append(root + "/video.m3u8")
     return "\n".join(lines) + "\n"
 
 
+def _track(tracks, lang):
+    for track in tracks:
+        if track["lang"] == lang:
+            return track
+    return tracks[0] if tracks else None
+
+
 def media_playlist(channel, kind, lang=None):
-    audios, videos = load_master(channel)
+    audios, videos, subtitles = load_master(channel)
     if kind == "video":
         upstream = choose_video(videos, target_height())["uri"]
+    elif kind == "sub":
+        track = _track(subtitles, lang)
+        if track is None:
+            raise LookupError("sub")
+        upstream = track["uri"]
     else:
-        match = None
-        for audio in audios:
-            if audio["lang"] == lang:
-                match = audio
-                break
-        if match is None and audios:
-            match = audios[0]
-        if match is None:
+        track = _track(audios, lang)
+        if track is None:
             raise LookupError("audio")
-        upstream = match["uri"]
+        upstream = track["uri"]
     return trim(fetch(ORIGIN + upstream))
 
 
@@ -236,6 +295,8 @@ class Handler(BaseHTTPRequestHandler):
                 body = media_playlist(channel, "video")
             elif len(parts) == 3 and parts[1] == "audio" and parts[2].endswith(".m3u8"):
                 body = media_playlist(channel, "audio", parts[2][:-5])
+            elif len(parts) == 3 and parts[1] == "sub" and parts[2].endswith(".m3u8"):
+                body = media_playlist(channel, "sub", parts[2][:-5])
             else:
                 self.send_error(404)
                 return
